@@ -30,6 +30,49 @@ class UserController extends BaseController {
             next(error)
         }
     }
+     
+    handle = (result) => {
+        if (result.status === 'fulfilled') {
+            return result.value;
+        } else {
+            // Optional: Add more context to the error
+            throw new Error(result.reason || 'Unknown Error');
+        }
+    }
+    
+    optimizedCode = async (req, res, next) => {
+        try {
+            const results = await Promise.allSettled([
+                userdata(),
+                mainIdData()
+            ]);
+    
+            // Process results separately for `fulfilled` and `rejected`
+            const user = this.handle(results[0]); // Handle first promise result
+            const mainId = this.handle(results[1]); // Handle second promise result
+    
+            // Use user and mainId as needed
+            res.json({ user, mainId });
+        } catch (error) {
+            // Handle any errors
+            next(error); // Pass error to the next middleware
+        }
+    }
+
+    optimizedCode2 = async (req, res, next) => {
+        const results = await Promise.allSettled([userdata(), mainIdData()]);
+    
+        const fulfilledResults = results
+            .filter(result => result.status === 'fulfilled')
+            .map(result => result.value);
+    
+        if (fulfilledResults.length < results.length) {
+            console.warn('Some promises were rejected:', results);
+        }
+    
+        res.json({ user: fulfilledResults[0], mainId: fulfilledResults[1] });
+    }
+    
 
 }
 
